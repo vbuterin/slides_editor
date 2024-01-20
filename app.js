@@ -1,41 +1,10 @@
 const sourceEl = document.getElementById('source');
 const outputEl = document.getElementById('output');
 const saveSourceBtn = document.getElementById('save-source');
-const saveOutputBtn = document.getElementById('save-output');
 const previousSlide = document.getElementById('previous-slide');
 const nextSlide = document.getElementById('next-slide');
 
-const slideModeBtn = document.querySelector('#slide-mode');
-const documentModeBtn = document.querySelector('#document-mode');
-
-const slideExtraHeader = `
-<style>
-            @page {
-                size: 841px 595px;
-                margin: 0;
-            }
-            body {
-                font-family: Arial, sans-serif;
-                font-size: 180%;
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            .slide {
-                width: 100%;
-                height: 160mm; /* Explicitly set to match A4 landscape */
-                display: table;
-                page-break-after: always;
-                box-sizing: border-box;
-                position: relative;
-                overflow: hidden;
-            }
-</style>
-`
-
 let activeIndex = 0;
-let currentView = 'document';
 
 // Add the 'download' attribute to buttons for IE10+ support
 const isIE = /*@cc_on!@*/ false || !!document.documentMode;
@@ -66,34 +35,6 @@ saveSourceBtn.addEventListener('click', () => {
   saveAs(blob, 'source.md');
 });
 
-saveOutputBtn.addEventListener('click', () => {
-  const htmlToSave = (
-    '<html><head>' +
-    '<link rel="stylesheet" href="css/styles.css">' +
-    (currentView == 'slide' ? slideExtraHeader : '') +
-    '</head><body>' +
-    outputEl.innerHTML +
-    '</body></html>'
-  );
-  const blob = new Blob([htmlToSave], { type: 'text/html' });
-  saveAs(blob, 'output.html');
-});
-
-// Add event listener to radio buttons
-slideModeBtn.addEventListener('change', () => {
-  currentView = 'slide';
-  updateOutput();
-  outputEl.classList.remove('markdown-body');
-  outputEl.style.height = '560px';
-});
-
-documentModeBtn.addEventListener('change', () => {
-  currentView = 'document';
-  updateOutput();
-  outputEl.classList.add('markdown-body');
-  outputEl.style.height = 'calc(100vh - 4rem)';
-});
-
 function getParameter(source, styleString) {
   const regex = new RegExp(`\\[${styleString}\\]: <> \\(.*\\)`, 'gm');
   const match = source.match(regex);
@@ -105,26 +46,44 @@ function getParameter(source, styleString) {
 
 function updateOutput () {
   try {
-      if (currentView == 'document') {
-        outputEl.innerHTML = marked.parse(sourceEl.value);
-      }
-      else {
-        let globalStyle = getParameter(sourceEl.value, 'global_style');
+        let background = getParameter(sourceEl.value, 'background');
         let sources = sourceEl.value.split('\n---');
         let outputs = sources.map((x) => {
-	    let style = getParameter(x, 'slide_style') || globalStyle;
 	    return (
-                '<div class="slide" style="' + style + '">' +
-		marked.parse(x) +
-		'</div>'
-            )
-	});
+            '<div class="slide" style="background-image:url(' + background + ')">' +
+		    marked.parse(x) +
+		    '</div>'
+        )});
         outputEl.innerHTML = outputs.join(' ');
-      }
   } catch (error) {
     outputEl.innerHTML = '<div style="color:red">Error parsing Markdown</div>';
   }
 }
+
+document.querySelector('#print-mode').addEventListener('click', () => {
+    document.querySelectorAll('#editor, #buttons').forEach((element) => {
+        element.style.display = 'none';
+    });
+    outputEl.childNodes.forEach((element) => {
+        document.body.appendChild(element);
+    });
+    setTimeout(() => {
+        alert("Now in print mode! Press 'B' to go back");
+        window.print();
+    }, 1000);
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'b' || event.key === 'B') {
+        document.querySelectorAll(".slide, #fixed-bg").forEach((element) => {
+            element.remove();
+        });
+        document.querySelectorAll('#editor, #buttons').forEach((element) => {
+            element.style.display = '';
+        });
+        updateOutput();
+    }
+});
 
 // Add event listener for showing compiled HTML in output div
 sourceEl.addEventListener('input', updateOutput);

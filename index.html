@@ -2,15 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>In-Browser Text Editor</title>
     <link rel="stylesheet" href="css/styles.css" />
-    <link rel="stylesheet" href="css/common-vendor.b8ecfc406ac0b5f77a26.css" />
-    <link rel="stylesheet" href="css/fretboard.f32f2a8d5293869f0195.css" />
-    <link rel="stylesheet" href="css/global.css" />
-    <link rel="stylesheet" href="css/misc.css" />
-    <link rel="stylesheet" href="css/pretty.0ae3265014f89d9850bf.css" />
-    <link rel="stylesheet" href="css/pretty-vendor.83ac49e057c3eac4fce3.css" />
   </head>
   <body>
     <div id="editor">
@@ -20,15 +13,11 @@
 
     <div id="buttons">
         <button id="save-source">Save source</button>
-        <button id="save-output">Save output</button>
-    
-        <input type="radio" name="view-mode" id="document-mode" checked />
-        <label for="document-mode">Document mode</label>
-        <input type="radio" name="view-mode" id="slide-mode" />
-        <label for="slide-mode">Slide mode</label>
     
         <button id="previous-slide">Previous slide</button>
         <button id="next-slide">Next slide</button>
+
+        <button id="print-mode">Print</button>
     </div>
 
     <script src="marked.min.js"></script>
