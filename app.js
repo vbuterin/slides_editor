@@ -49,9 +49,11 @@ function updateOutput() {
     let sources = sourceEl.value.split('\n===');
     let outputs = sources.map((x) => {
       return (
-        '<div class="slide">' + _u.convertMarkdownToHTML(x) + '</div>'
+        '<div class="slide-wrapper"><div class="slide">' + _u.convertMarkdownToHTML(x) + '</div></div>'
       );
     });
+
+    console.log(outputs);
     outputEl.innerHTML = outputs.join(' ').replace(
       /<div data-page-break="true" data-type="page-break"><\/div>/g,
       `</div><div data-page-break="true" data-type="page-break"></div><div class="slide">`
@@ -110,6 +112,7 @@ function updateActiveView() {
 }
 
 function getSlideCount() {
+  console.log(output.innerHTML);
   const count =
     output.innerHTML.split(
       '<div data-page-break="true" data-type="page-break"></div>'
