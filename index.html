@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>In-Browser Text Editor</title>
-    <link rel="stylesheet" href="css/styles.css" />
-  </head>
-  <body>
-    <div id="editor">
-      <textarea id="source"></textarea>
-      <div id="output" class="markdown-body"></div>
-    </div>
 
-    <div id="buttons">
-        <button id="save-source">Save source</button>
-    
-        <button id="previous-slide">Previous slide</button>
-        <button id="next-slide">Next slide</button>
+<head>
+  <meta charset="UTF-8" />
+  <title>In-Browser Text Editor</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="md2slides.css" />
+</head>
 
-        <button id="print-mode">Print</button>
-    </div>
+<body>
+  <div id="editor">
+    <textarea id="source"></textarea>
+    <div id="output" class="markdown-body"></div>
+  </div>
 
-    <script src="marked.min.js"></script>
-    <script src="app.js"></script>
-  </body>
+  <div id="buttons">
+    <button id="save-source">Save source</button>
+
+    <button id="previous-slide">Previous slide</button>
+    <button id="next-slide">Next slide</button>
+
+    <button id="print-mode">Print</button>
+  </div>
+
+  <script src="index.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
 </html>

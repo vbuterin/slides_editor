@@ -3,6 +3,7 @@ const outputEl = document.getElementById('output');
 const saveSourceBtn = document.getElementById('save-source');
 const previousSlide = document.getElementById('previous-slide');
 const nextSlide = document.getElementById('next-slide');
+const _u = window.md2slides;
 
 let activeIndex = 0;
 
@@ -39,75 +40,81 @@ function getParameter(source, styleString) {
   const regex = new RegExp(`\\[${styleString}\\]: <> \\(.*\\)`, 'gm');
   const match = source.match(regex);
   if (match)
-    return match[0].slice(match[0].indexOf('(')+1, match[0].lastIndexOf(')'));
-  else
-    return '';
+    return match[0].slice(match[0].indexOf('(') + 1, match[0].lastIndexOf(')'));
+  else return '';
 }
 
-function updateOutput () {
+function updateOutput() {
   try {
-        let background = getParameter(sourceEl.value, 'background');
-        let sources = sourceEl.value.split('\n---');
-        let outputs = sources.map((x) => {
-	    return (
-            '<div class="slide" style="background-image:url(' + background + ')">' +
-		    marked.parse(x) +
-		    '</div>'
-        )});
-        outputEl.innerHTML = outputs.join(' ');
+    let sources = sourceEl.value.split('\n===');
+    let outputs = sources.map((x) => {
+      return (
+        '<div class="slide">' + _u.convertMarkdownToHTML(x) + '</div>'
+      );
+    });
+    outputEl.innerHTML = outputs.join(' ').replace(
+      /<div data-page-break="true" data-type="page-break"><\/div>/g,
+      `</div><div data-page-break="true" data-type="page-break"></div><div class="slide">`
+    );
   } catch (error) {
     outputEl.innerHTML = '<div style="color:red">Error parsing Markdown</div>';
   }
 }
 
 document.querySelector('#print-mode').addEventListener('click', () => {
-    document.querySelectorAll('#editor, #buttons').forEach((element) => {
-        element.style.display = 'none';
-    });
-    outputEl.childNodes.forEach((element) => {
-        document.body.appendChild(element);
-    });
-    setTimeout(() => {
-        alert("Now in print mode! Press 'B' to go back");
-        window.print();
-    }, 1000);
+  document.querySelectorAll('#editor, #buttons').forEach((element) => {
+    element.style.display = 'none';
+  });
+  outputEl.childNodes.forEach((element) => {
+    document.body.appendChild(element);
+  });
+  setTimeout(() => {
+    alert("Now in print mode! Press 'B' to go back");
+    window.print();
+  }, 1000);
 });
 
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'b' || event.key === 'B') {
-        document.querySelectorAll(".slide, #fixed-bg").forEach((element) => {
-            element.remove();
-        });
-        document.querySelectorAll('#editor, #buttons').forEach((element) => {
-            element.style.display = '';
-        });
-        updateOutput();
-    }
+  if (event.key === 'b' || event.key === 'B') {
+    document.querySelectorAll('.slide, #fixed-bg').forEach((element) => {
+      element.remove();
+    });
+    document.querySelectorAll('#editor, #buttons').forEach((element) => {
+      element.style.display = '';
+    });
+    updateOutput();
+  }
 });
 
 // Add event listener for showing compiled HTML in output div
 sourceEl.addEventListener('input', updateOutput);
 
 previousSlide.addEventListener('click', () => {
-    if (activeIndex > 0) {
-      activeIndex--;
-      updateActiveView();
-    }
+  if (activeIndex > 0) {
+    activeIndex--;
+    updateActiveView();
+  }
 });
 
 nextSlide.addEventListener('click', () => {
-    if (activeIndex < getSlideCount() - 1) {
-      activeIndex++;
-      updateActiveView();
-    }
+  if (activeIndex < getSlideCount() - 1) {
+    activeIndex++;
+    updateActiveView();
+  }
 });
 
 function updateActiveView() {
-    const slides = output.querySelectorAll('.slide');
-    const currentSlide = slides[activeIndex];
-    currentSlide.scrollIntoView({ behavior: 'smooth' });
+  const slides = output.querySelectorAll('.slide');
+  const currentSlide = slides[activeIndex];
+  currentSlide.scrollIntoView({ behavior: 'smooth' });
 }
 
 function getSlideCount() {
-    return output.querySelectorAll('.slide').length;
+  const count =
+    output.innerHTML.split(
+      '<div data-page-break="true" data-type="page-break"></div>'
+    ).length;
+
+
+  return count || 0;
 }
