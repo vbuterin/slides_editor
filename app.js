@@ -4,6 +4,7 @@ const saveSourceBtn = document.getElementById('save-source');
 const previousSlide = document.getElementById('previous-slide');
 const nextSlide = document.getElementById('next-slide');
 const _u = window.md2slides;
+const importMdBtn = document.getElementById('import-md');
 
 let activeIndex = 0;
 
@@ -141,4 +142,22 @@ function getCurrentSlideIndex() {
 // Add scroll event listener to update activeIndex
 outputEl.addEventListener('scroll', () => {
   activeIndex = getCurrentSlideIndex();
+});
+
+importMdBtn.addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.md';
+  input.onchange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        sourceEl.value = e.target.result;
+        updateOutput();
+      };
+      reader.readAsText(file);
+    }
+  };
+  input.click();
 });
