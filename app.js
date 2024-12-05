@@ -50,7 +50,7 @@ function updateOutput() {
     let sources = sourceEl.value.split('\n===');
     let outputs = sources.map((x) => {
       return (
-        '<div class="slide-wrapper"><div class="slide">' +
+        '<div class="slide">' +
         _u.convertMarkdownToHTML(x) +
         '</div></div>'
       );
