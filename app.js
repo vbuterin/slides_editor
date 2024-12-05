@@ -106,18 +106,36 @@ nextSlide.addEventListener('click', () => {
 });
 
 function updateActiveView() {
-  const slides = output.querySelectorAll('.slide');
+  const slides = outputEl.querySelectorAll('.slide');
   const currentSlide = slides[activeIndex];
-  currentSlide.scrollIntoView({ behavior: 'smooth' });
+  if (currentSlide) {
+    currentSlide.scrollIntoView({ behavior: 'smooth' });
+  }
 }
 
 function getSlideCount() {
-  console.log(output.innerHTML);
-  const count =
-    output.innerHTML.split(
-      '<div data-page-break="true" data-type="page-break"></div>'
-    ).length;
-
-
-  return count || 0;
+  return outputEl.querySelectorAll('.slide').length;
 }
+
+// Add this new function to determine which slide is currently most visible
+function getCurrentSlideIndex() {
+  const slides = outputEl.querySelectorAll('.slide');
+  let closest = 0;
+  let closestDistance = Infinity;
+  
+  slides.forEach((slide, index) => {
+    const rect = slide.getBoundingClientRect();
+    const distance = Math.abs(rect.top);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closest = index;
+    }
+  });
+  
+  return closest;
+}
+
+// Add scroll event listener to update activeIndex
+outputEl.addEventListener('scroll', () => {
+  activeIndex = getCurrentSlideIndex();
+});
