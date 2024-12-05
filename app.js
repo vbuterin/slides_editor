@@ -49,14 +49,18 @@ function updateOutput() {
     let sources = sourceEl.value.split('\n===');
     let outputs = sources.map((x) => {
       return (
-        '<div class="slide-wrapper"><div class="slide">' + _u.convertMarkdownToHTML(x) + '</div></div>'
+        '<div class="slide-wrapper"><div class="slide">' +
+        _u.convertMarkdownToHTML(x) +
+        '</div></div>'
       );
     });
 
-    outputEl.innerHTML = outputs.join(' ').replace(
-      /<div data-page-break="true" data-type="page-break"><\/div>/g,
-      `</div><div data-page-break="true" data-type="page-break"></div><div class="slide">`
-    );
+    outputEl.innerHTML = outputs
+      .join(' ')
+      .replace(
+        /<div data-page-break="true" data-type="page-break"><\/div>/g,
+        `</div><div data-page-break="true" data-type="page-break"></div><div class="slide">`
+      );
   } catch (error) {
     outputEl.innerHTML = '<div style="color:red">Error parsing Markdown</div>';
   }
@@ -121,7 +125,7 @@ function getCurrentSlideIndex() {
   const slides = outputEl.querySelectorAll('.slide');
   let closest = 0;
   let closestDistance = Infinity;
-  
+
   slides.forEach((slide, index) => {
     const rect = slide.getBoundingClientRect();
     const distance = Math.abs(rect.top);
@@ -130,7 +134,7 @@ function getCurrentSlideIndex() {
       closest = index;
     }
   });
-  
+
   return closest;
 }
 
