@@ -53,7 +53,6 @@ function updateOutput() {
       );
     });
 
-    console.log(outputs);
     outputEl.innerHTML = outputs.join(' ').replace(
       /<div data-page-break="true" data-type="page-break"><\/div>/g,
       `</div><div data-page-break="true" data-type="page-break"></div><div class="slide">`

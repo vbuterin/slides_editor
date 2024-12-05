@@ -65,7 +65,6 @@ textarea,
 }
 
 #output {
-  height: 565px;
   padding: 20px 10px 20px 10px;
 }
 
@@ -97,8 +96,9 @@ body {
     display: table;
     box-sizing: border-box;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     margin-bottom: 10px;
+    page-break-inside: avoid;
     page-break-after: always;
     background-size: cover;
     background-position: center;
