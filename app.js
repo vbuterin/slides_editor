@@ -51,7 +51,9 @@ function updateOutput() {
     let outputs = sources.map((x) => {
       return (
         '<div class="slide">' +
-        _u.convertMarkdownToHTML(x) +
+        _u.convertMarkdownToHTML(x, {
+          maxWordsPerSlide: 200,
+        }) +
         '</div></div>'
       );
     });
