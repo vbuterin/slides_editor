@@ -163,3 +163,13 @@ importMdBtn.addEventListener('click', () => {
   };
   input.click();
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+  const closeHint = document.querySelector(".close-hint");
+  if (closeHint) {
+    closeHint.addEventListener("click", function () {
+      const hint = this.closest(".page-break-hint")
+      hint.style.display = "none"
+    });
+  };
+});
