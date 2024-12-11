@@ -3,6 +3,8 @@ const outputEl = document.getElementById('output');
 const saveSourceBtn = document.getElementById('save-source');
 const previousSlide = document.getElementById('previous-slide');
 const nextSlide = document.getElementById('next-slide');
+const _u = window.md2slides;
+const importMdBtn = document.getElementById('import-md');
 
 let activeIndex = 0;
 
@@ -39,75 +41,135 @@ function getParameter(source, styleString) {
   const regex = new RegExp(`\\[${styleString}\\]: <> \\(.*\\)`, 'gm');
   const match = source.match(regex);
   if (match)
-    return match[0].slice(match[0].indexOf('(')+1, match[0].lastIndexOf(')'));
-  else
-    return '';
+    return match[0].slice(match[0].indexOf('(') + 1, match[0].lastIndexOf(')'));
+  else return '';
 }
 
-function updateOutput () {
+function updateOutput() {
   try {
-        let background = getParameter(sourceEl.value, 'background');
-        let sources = sourceEl.value.split('\n---');
-        let outputs = sources.map((x) => {
-	    return (
-            '<div class="slide" style="background-image:url(' + background + ')">' +
-		    marked.parse(x) +
-		    '</div>'
-        )});
-        outputEl.innerHTML = outputs.join(' ');
+    let sources = sourceEl.value.split('\n===');
+    let outputs = sources.map((x) => {
+      return (
+        '<div class="slide">' +
+        _u.convertMarkdownToHTML(x, {
+          maxWordsPerSlide: 200,
+        }) +
+        '</div></div>'
+      );
+    });
+
+    outputEl.innerHTML = outputs
+      .join(' ')
+      .replace(
+        /<div data-page-break="true" data-type="page-break"><\/div>/g,
+        `</div><div data-page-break="true" data-type="page-break"></div><div class="slide">`
+      );
   } catch (error) {
     outputEl.innerHTML = '<div style="color:red">Error parsing Markdown</div>';
   }
 }
 
 document.querySelector('#print-mode').addEventListener('click', () => {
-    document.querySelectorAll('#editor, #buttons').forEach((element) => {
-        element.style.display = 'none';
-    });
-    outputEl.childNodes.forEach((element) => {
-        document.body.appendChild(element);
-    });
-    setTimeout(() => {
-        alert("Now in print mode! Press 'B' to go back");
-        window.print();
-    }, 1000);
+  document.querySelectorAll('#editor, #buttons').forEach((element) => {
+    element.style.display = 'none';
+  });
+  outputEl.childNodes.forEach((element) => {
+    document.body.appendChild(element);
+  });
+  setTimeout(() => {
+    alert("Now in print mode! Press 'B' to go back");
+    window.print();
+  }, 1000);
 });
 
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'b' || event.key === 'B') {
-        document.querySelectorAll(".slide, #fixed-bg").forEach((element) => {
-            element.remove();
-        });
-        document.querySelectorAll('#editor, #buttons').forEach((element) => {
-            element.style.display = '';
-        });
-        updateOutput();
-    }
+  if (event.key === 'b' || event.key === 'B') {
+    document.querySelectorAll('.slide, #fixed-bg').forEach((element) => {
+      element.remove();
+    });
+    document.querySelectorAll('#editor, #buttons').forEach((element) => {
+      element.style.display = '';
+    });
+    updateOutput();
+  }
 });
 
 // Add event listener for showing compiled HTML in output div
 sourceEl.addEventListener('input', updateOutput);
 
 previousSlide.addEventListener('click', () => {
-    if (activeIndex > 0) {
-      activeIndex--;
-      updateActiveView();
-    }
+  if (activeIndex > 0) {
+    activeIndex--;
+    updateActiveView();
+  }
 });
 
 nextSlide.addEventListener('click', () => {
-    if (activeIndex < getSlideCount() - 1) {
-      activeIndex++;
-      updateActiveView();
-    }
+  if (activeIndex < getSlideCount() - 1) {
+    activeIndex++;
+    updateActiveView();
+  }
 });
 
 function updateActiveView() {
-    const slides = output.querySelectorAll('.slide');
-    const currentSlide = slides[activeIndex];
+  const slides = outputEl.querySelectorAll('.slide');
+  const currentSlide = slides[activeIndex];
+  if (currentSlide) {
     currentSlide.scrollIntoView({ behavior: 'smooth' });
+  }
 }
 
 function getSlideCount() {
-    return output.querySelectorAll('.slide').length;
+  return outputEl.querySelectorAll('.slide').length;
 }
+
+// Add this new function to determine which slide is currently most visible
+function getCurrentSlideIndex() {
+  const slides = outputEl.querySelectorAll('.slide');
+  let closest = 0;
+  let closestDistance = Infinity;
+
+  slides.forEach((slide, index) => {
+    const rect = slide.getBoundingClientRect();
+    const distance = Math.abs(rect.top);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closest = index;
+    }
+  });
+
+  return closest;
+}
+
+// Add scroll event listener to update activeIndex
+outputEl.addEventListener('scroll', () => {
+  activeIndex = getCurrentSlideIndex();
+});
+
+importMdBtn.addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.md';
+  input.onchange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        sourceEl.value = e.target.result;
+        updateOutput();
+      };
+      reader.readAsText(file);
+    }
+  };
+  input.click();
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const closeHint = document.querySelector(".close-hint");
+  if (closeHint) {
+    closeHint.addEventListener("click", function () {
+      const hint = this.closest(".page-break-hint")
+      hint.style.display = "none"
+    });
+  };
+});
