@@ -46,14 +46,17 @@ function getParameter(source, styleString) {
 
 function updateOutput () {
   try {
-        let background = getParameter(sourceEl.value, 'background');
+        let background = '';
         let sources = sourceEl.value.split('\n---');
-        let outputs = sources.map((x) => {
-	    return (
-            '<div class="slide" style="background-image:url(' + background + ')">' +
-		    marked.parse(x) +
-		    '</div>'
-        )});
+        let outputs = [];
+        sources.forEach((slide) => {
+            background = getParameter(slide, 'background') || background;
+            outputs.push(
+                '<div class="slide" style="background-image:url(' + background + '); background-size: cover">' +
+		        marked.parse(slide) +
+		        '</div>'
+            );
+        });
         outputEl.innerHTML = outputs.join(' ');
   } catch (error) {
     outputEl.innerHTML = '<div style="color:red">Error parsing Markdown</div>';

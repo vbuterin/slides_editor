@@ -71,13 +71,16 @@ body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     img {
-        max-width: 550px;
+        max-width: 530px;
 	    box-sizing: content-box;
 	    position: relative;
 	    left: calc(12.5% - 30px);
-	    margin: 30px;
+	    margin-left: 15px;
+	    margin-right: 15px;
+	    margin-top: 5px;
+	    margin-bottom: 5px;
         @media print {
-            max-width: 550px !important
+            max-width: 530px !important
         }
     }
     table {{
