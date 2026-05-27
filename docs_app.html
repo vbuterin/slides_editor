@@ -1,0 +1,2472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Editor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Theme variables */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --header-bg: rgba(255,255,255,0.1);
+            --editor-bg: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+            --preview-bg: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            --text-light: white;
+            --text-dark: #333;
+        }
+
+        html.dark {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --header-bg: rgba(0,0,0,0.3);
+            --editor-bg: linear-gradient(135deg, rgba(15, 12, 41, 0.6) 0%, rgba(48, 43, 99, 0.6) 100%);
+            --preview-bg: linear-gradient(135deg, rgba(15, 12, 41, 0.3) 0%, rgba(48, 43, 99, 0.3) 100%);
+        }
+
+        /* Editor Header */
+        .editor-header {
+            background: var(--header-bg);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .editor-header h1 {
+            color: var(--text-light);
+            font-size: 1.5rem;
+            font-weight: 300;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Dark mode toggle */
+        .dark-toggle {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dark-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .dark-toggle .icon {
+            font-size: 1.2rem;
+        }
+
+        html.dark .dark-toggle {
+            background: #1a1a2e;
+            color: #f0e68c;
+        }
+
+        html.dark .print-btn, html.dark .save-btn, html.dark .load-btn {
+            background: #1a1a2e;
+            color: #f0e68c;
+        }
+
+        html.dark .editor-section {
+            background: var(--editor-bg);
+        }
+
+        html.dark #markdown-input {
+            background: rgba(30, 30, 60, 0.95);
+            color: #e0e0e0;
+        }
+
+        html.dark .preview-section h2 {
+            color: #aaa;
+        }
+
+        html.dark .document-page {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        html.dark .document-page h1 {
+            color: #f0f0f0;
+            border-bottom-color: #8b83c3;
+        }
+
+        html.dark .document-page h2 {
+            color: #d0d0d0;
+        }
+
+        html.dark .document-page h3 {
+            color: #c0c0c0;
+        }
+
+        html.dark .document-page p,
+        html.dark .document-page ul,
+        html.dark .document-page ol {
+            color: #d0d0d0;
+        }
+
+        html.dark .document-page li {
+            color: #d0d0d0;
+        }
+
+        html.dark .document-page blockquote {
+            color: #b0b0b0;
+            background: rgba(255,255,255,0.05);
+            border-left-color: #8b83c3;
+        }
+
+        html.dark .document-page code {
+            background: rgba(255,255,255,0.1);
+            color: #f08dcd;
+        }
+
+        html.dark .document-page table {
+            border-color: #444;
+        }
+
+        html.dark .document-page th, html.dark .document-page td {
+            border-color: #444;
+            color: #d0d0d0;
+        }
+
+        html.dark .document-page th {
+            background: #4a4580;
+            color: white;
+        }
+
+        html.dark .document-page tr:nth-child(even) {
+            background: rgba(255,255,255,0.03);
+        }
+
+        html.dark .document-page hr {
+            background: linear-gradient(to right, #8b83c3, #6b5ba0);
+        }
+
+        html.dark .empty-state {
+            color: #666;
+        }
+
+        html.dark .device-view {
+            background-color: #050510;
+            border-color: #1a1a40;
+        }
+
+        html.dark .device-view h3 {
+            color: #5588cc;
+            border-bottom-color: #1a3a6a;
+        }
+
+        html.dark .device-view th {
+            color: #88bbee;
+            border-color: #1a3a6a;
+        }
+
+        html.dark .device-view td {
+            color: #88bbee;
+            border-color: #1a3a6a;
+        }
+
+        html.dark .device-view tbody tr:nth-child(odd) {
+            background-color: #080820;
+            border-color: #0f1a3a;
+        }
+
+        html.dark .device-view tbody tr:nth-child(even) {
+            background-color: #0a0a2a;
+            border-color: #0f1a3a;
+        }
+
+        html.dark .device-view button {
+            background-color: #0a1a3a;
+            border-color: #1a3a6a;
+            color: #88bbee;
+        }
+
+        html.dark .device-view button:hover {
+            background-color: #1a2a4a;
+            border-color: #4488cc;
+        }
+
+        html.dark .device-view ul,
+        html.dark .device-view ol,
+        html.dark .device-view li {
+            color: #6699bb;
+        }
+
+        .print-btn, .save-btn, .load-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .print-btn:hover, .save-btn:hover, .load-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Main layout wrapper */
+        .layout-wrapper {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            height: calc(100vh - 70px);
+            align-items: flex-start;
+        }
+
+        /* Main layout */
+        .main-container {
+            display: flex;
+            height: 100%;
+        }
+
+        /* Editor section */
+        .editor-section {
+            width: 600px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .editor-section h2 {
+            color: white;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        #markdown-input {
+            flex: 1;
+            width: 100%;
+            padding: 25px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            resize: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        #markdown-input:focus {
+            outline: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Preview section */
+        .preview-section {
+            width: 800px;
+            padding: 10px;
+            overflow-y: auto;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            border-radius: 12px;
+        }
+
+        .preview-section h2 {
+            color: #666;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        #document-preview {
+            display: block;
+            padding: 0;
+            margin: 0;
+            min-height: auto;
+        }
+
+        /* Document styling */
+        .document-page {
+            background: #fff;
+            border-radius: 12px;
+            padding: 60px 80px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 780px;
+            min-height: 1000px;
+            margin-bottom: 10px;
+        }
+
+        .document-page h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.2;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        .document-page h2 {
+            font-size: 2rem;
+            color: #444;
+            margin-bottom: 15px;
+            margin-top: 30px;
+        }
+
+        .document-page h3 {
+            font-size: 1.5rem;
+            color: #555;
+            margin-bottom: 12px;
+            margin-top: 25px;
+        }
+
+        .document-page p {
+            font-size: 1.1rem;
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .document-page ul {
+            font-size: 1.1rem;
+            color: #333;
+            line-height: 2;
+            margin-bottom: 20px;
+            padding-left: 30px;
+            list-style-type: disc;
+        }
+
+        .document-page ol {
+            font-size: 1.1rem;
+            color: #333;
+            line-height: 2;
+            margin-bottom: 20px;
+            padding-left: 30px;
+            list-style-type: decimal;
+        }
+
+        .document-page li {
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        /* Nested lists styling */
+        .document-page ul ul,
+        .document-page ul ol,
+        .document-page ol ul,
+        .document-page ol ol {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        .document-page blockquote {
+            border-left: 5px solid #667eea;
+            padding-left: 25px;
+            margin: 25px 0;
+            font-size: 1.1rem;
+            color: #555;
+            font-style: italic;
+            background: #f8f9fa;
+            padding: 20px 25px;
+            border-radius: 4px;
+        }
+
+        .document-page pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 25px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .document-page code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: #f5f5f5;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #e83e8c;
+        }
+
+        .document-page pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .document-page table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+        }
+
+        .document-page th, .document-page td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+            color: #333;
+        }
+
+        .document-page img {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .document-page th {
+            background: #667eea;
+            color: white;
+        }
+
+        .document-page tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .document-page hr {
+            border: none;
+            height: 3px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            margin: 30px 0;
+            border-radius: 2px;
+        }
+
+        /* Back button - hidden by default */
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 2000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Print styles - single page */
+        @media print {
+            body {
+                background: white !important;
+                min-height: auto;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Hide editor and UI elements */
+            .editor-header,
+            .editor-section,
+            .preview-section h2,
+            .print-btn,
+            .back-btn {
+                display: none !important;
+            }
+
+            /* Show preview-section and document container */
+            .preview-section {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                background: white !important;
+                overflow: visible !important;
+            }
+
+            /* Show only the document container */
+            #document-preview {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                background: white !important;
+            }
+
+            .document-page {
+                width: 100% !important;
+                min-height: auto !important;
+                padding: 40px 60px !important;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+            }
+
+            .document-page h1 {
+                font-size: 2rem;
+                color: #333 !important;
+                border-bottom: 2px solid #667eea !important;
+            }
+
+            .document-page h2 {
+                font-size: 1.5rem;
+                color: #444 !important;
+            }
+
+            .document-page h3 {
+                font-size: 1.2rem;
+                color: #555 !important;
+            }
+
+            .document-page p {
+                font-size: 1rem;
+                color: #333 !important;
+            }
+
+            .document-page ul {
+                font-size: 1rem;
+                color: #333 !important;
+                list-style-type: disc !important;
+            }
+
+            .document-page ol {
+                font-size: 1rem;
+                color: #333 !important;
+                list-style-type: decimal !important;
+            }
+
+            .document-page li {
+                margin-bottom: 6px;
+                color: #333 !important;
+            }
+
+            /* Nested lists styling for print */
+            .document-page ul ul,
+            .document-page ul ol,
+            .document-page ol ul,
+            .document-page ol ol {
+                margin-top: 8px;
+                margin-bottom: 8px;
+            }
+
+            .document-page blockquote {
+                font-size: 1rem;
+                color: #555 !important;
+            }
+
+            .document-page pre {
+                font-size: 0.85rem;
+                padding: 20px;
+            }
+
+            .document-page code {
+                font-size: 0.9rem;
+                color: #e83e8c !important;
+            }
+
+            .document-page table {
+                font-size: 0.85rem;
+            }
+
+            .document-page th, .document-page td {
+                padding: 10px;
+                color: inherit !important;
+            }
+
+            .document-page th {
+                background: #667eea !important;
+                color: white !important;
+            }
+
+            .document-page tr:nth-child(even) {
+                background: #f9f9f9 !important;
+            }
+
+            .document-page img {
+                display: block;
+                margin: 20px auto;
+                max-width: 100%;
+                height: auto;
+            }
+        }
+
+        /* Animation for rendering */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .document-page {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        /* Loading state */
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 500px;
+            color: #999;
+            font-size: 1.2rem;
+        }
+
+        /* Base device view styles (shared by wide and narrow) */
+        .device-view {
+            background-color: #0a0e27;
+            color: #7fbcff;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            margin: 0;
+            border-radius: 15px;
+            font-size: 75%;
+            display: block;
+            margin: 20px auto;
+        }
+
+        .wide-device-view {
+            max-width: 900px;
+        }
+
+        .narrow-device-view {
+            max-width: 50%;
+        }
+
+        .device-view h3 {
+            color: #7fbcff;
+            border-bottom: 2px solid #3d70c3;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .device-view table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .device-view thead tr {
+            background-color: #1a2a4a;
+            border: 1px solid #3d70c3;
+        }
+
+        .device-view th {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #3d70c3;
+            color: #cef;
+            font-weight: bold;
+        }
+
+        .device-view tbody tr:nth-child(odd) {
+            background-color: #0f1a3a !important;
+            border: 1px solid #2a4a7a;
+        }
+
+        .device-view tbody tr:nth-child(even) {
+            background-color: #12204a !important;
+            border: 1px solid #2a4a7a;
+        }
+
+        .device-view td {
+            padding: 10px;
+            border: 1px solid #2a4a7a;
+            color: #b8d8ff;
+            font-weight: bold;
+        }
+
+        .device-view button {
+            background-color: #1a3a6a;
+            border: 1px solid #3d70c3;
+            padding: 10px 25px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+            color: #cef;
+        }
+
+        .device-view button:hover {
+            background-color: #2a4a7a;
+            border-color: #7fbcff;
+        }
+
+        .device-view ul,
+        .device-view ol {
+            padding-left: 10px !important;
+            margin-left: 0 !important;
+            margin-bottom: 0 !important;
+            list-style-position: outside !important;
+            font-size: inherit !important;
+            color: #9cc2ff !important;
+            line-height: inherit !important;
+            font-family: inherit !important;
+        }
+
+        .device-view li {
+            padding-left: 0 !important;
+            list-style-position: outside !important;
+            margin-bottom: 0 !important;
+            font-size: inherit !important;
+            color: #9cc2ff !important;
+            font-family: inherit !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-header">
+        <h1>Document Editor</h1>
+        <div class="header-buttons">
+            <button class="dark-toggle" id="dark-toggle-btn" onclick="toggleDarkMode()">
+                <span class="icon">☀️</span>
+            </button>
+            <button class="save-btn" onclick="saveSource()">Save Source</button>
+            <label class="load-btn">
+                Load Source
+                <input type="file" id="load-input" accept=".txt" style="display: none;" onchange="loadSource(this)">
+            </label>
+            <button class="save-btn" onclick="loadImage()">Load Image</button>
+            <button class="print-btn" onclick="printDocument()">Print to PDF</button>
+            <button class="save-btn" onclick="loadAllImages()">Load All Images</button>
+            <button class="save-btn" onclick="saveHtml()">Save HTML</button>
+        </div>
+    </div>
+
+    <div class="layout-wrapper">
+        <div class="main-container">
+            <div class="editor-section">
+                <h2>Markdown Input</h2>
+                <textarea id="markdown-input" placeholder="# Enter your document here
+
+# Welcome to Document Editor
+
+This is a simple markdown editor for long-form text documents.
+
+## Features
+
+- Write in markdown format
+- Preview your document in real-time
+- Export to PDF with a single click
+
+---
+
+### Code Example
+
+\`\`\`javascript
+function greet(name) {
+    return \`Hello, ${name}!\`;
+}
+\`\`\`
+
+---
+
+Enjoy writing your documents!"></textarea>
+                <input type="text" id="images-dir-input" placeholder="Images directory path (e.g., /images/)" style="width: 100%; padding: 8px; margin-top: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 14px;">
+            </div>
+
+            <div class="preview-section">
+                <h2>Preview</h2>
+                <div id="document-preview">
+                    <div class="empty-state">Enter markdown to see document preview</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const markdownInput = document.getElementById('markdown-input');
+        const documentPreview = document.getElementById('document-preview');
+        const imagesDirInput = document.getElementById('images-dir-input');
+
+        // Restore editor contents from sessionStorage on page load
+        if (sessionStorage.getItem('editorContents')) {
+            markdownInput.value = sessionStorage.getItem('editorContents');
+            sessionStorage.removeItem('editorContents');
+            renderDocument(markdownInput.value);
+        }
+
+        // Restore images directory from localStorage on page load
+        let isFirstLoad = true;
+        if (localStorage.getItem('imagesDirectory')) {
+            imagesDirInput.value = localStorage.getItem('imagesDirectory');
+        }
+
+        // Handle images directory change
+        imagesDirInput.addEventListener('input', function() {
+            const newDir = this.value;
+            localStorage.setItem('imagesDirectory', newDir);
+            
+            // Only update paths if we had a previous value (not the initial load)
+            if (!isFirstLoad && newDir) {
+                updateImagePaths(newDir);
+            }
+            isFirstLoad = false;
+        });
+
+        // Update all image paths in the editor
+        function updateImagePaths(newDir) {
+            const currentText = markdownInput.value;
+            
+            // Find all existing src attributes with paths
+            const srcRegex = /src="([^"]*)"/g;
+            let match;
+            let newText = currentText;
+            
+            // Build replacements for all found paths
+            const replacements = [];
+            while ((match = srcRegex.exec(currentText)) !== null) {
+                const oldPath = match[1];
+                if (oldPath) {
+                    replacements.push({ oldPath, newPath: newDir + oldPath });
+                }
+            }
+            
+            // Apply replacements from longest to shortest to avoid conflicts
+            replacements.sort((a, b) => b.oldPath.length - a.oldPath.length);
+            replacements.forEach(rep => {
+                newText = newText.replace(new RegExp(rep.oldPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), rep.newPath);
+            });
+            
+            markdownInput.value = newText;
+            renderDocument(markdownInput.value);
+        }
+
+        // Get default filename from first h1
+        function getDefaultFilename() {
+            const markdown = markdownInput.value;
+            const h1Match = markdown.match(/^# (.+)$/m);
+            
+            if (h1Match) {
+                let title = h1Match[1];
+                // Convert to lowercase
+                title = title.toLowerCase();
+                // Remove special characters except spaces, hyphens, and underscores
+                title = title.replace(/[^\w\s-]/g, '');
+                // Replace spaces and underscores with hyphens
+                title = title.replace(/[\s_]+/g, '-');
+                // Remove consecutive hyphens
+                title = title.replace(/-+/g, '-');
+                // Trim hyphens from start and end
+                title = title.replace(/^-+|-+$/g, '');
+                // Add .txt extension
+                return title + '.txt';
+            }
+            return 'document.txt';
+        }
+
+        // Extract the first header from HTML content (h1, h2, h3, etc.)
+        function getFirstHeaderFromHtml(htmlContent) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            // Look for headers in order: h1, h2, h3, h4, h5, h6
+            const headerOrder = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+            
+            for (const tag of headerOrder) {
+                const header = tempDiv.querySelector(tag);
+                if (header) {
+                    return header.textContent.trim();
+                }
+            }
+            
+            return null;
+        }
+
+        // Convert a title string to a safe filename slug
+        function slugifyTitle(title) {
+            if (!title) return 'document';
+            
+            // Convert to lowercase
+            let slug = title.toLowerCase();
+            
+            // Remove special characters except spaces, hyphens, and underscores
+            slug = slug.replace(/[^\w\s-]/g, '');
+            
+            // Replace spaces and underscores with hyphens
+            slug = slug.replace(/[\s_]+/g, '-');
+            
+            // Remove consecutive hyphens
+            slug = slug.replace(/-+/g, '-');
+            
+            // Trim hyphens from start and end
+            slug = slug.replace(/^-+|-+$/g, '');
+            
+            // Limit length to 100 characters
+            if (slug.length > 100) {
+                slug = slug.substring(0, 100);
+                slug = slug.replace(/-+$/, '');
+            }
+            
+            // Use default if empty
+            return slug || 'document';
+        }
+
+        // Get filename from first header in document (works for both markdown and HTML)
+        function getFilenameFromHeader(markdown, htmlContent) {
+            // Try markdown first
+            const h1Match = markdown.match(/^# (.+)$/m);
+            if (h1Match) {
+                return slugifyTitle(h1Match[1]) + '.txt';
+            }
+            
+            // Try HTML content
+            const firstHeader = getFirstHeaderFromHtml(htmlContent);
+            if (firstHeader) {
+                return slugifyTitle(firstHeader) + '.txt';
+            }
+            
+            return 'document.txt';
+        }
+
+        // Save source as .txt file
+        function saveSource() {
+            const markdown = markdownInput.value;
+            const htmlContent = documentPreview.innerHTML;
+            const filename = getFilenameFromHeader(markdown, htmlContent);
+            const content = markdown;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Load source from .txt file
+        function loadSource(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                markdownInput.value = e.target.result;
+                renderDocument(markdownInput.value);
+            };
+            reader.readAsText(file);
+            // Reset input so the same file can be loaded again
+            input.value = '';
+        }
+
+        // Load image
+        function loadImage() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Get the file path (using webkitPath for Chrome/Safari, or the file name for others)
+                let filePath = file.webkitRelativePath || file.name;
+                
+                // Prepend the images directory path if it's set
+                const imagesDir = imagesDirInput.value;
+                if (imagesDir) {
+                    filePath = imagesDir + filePath;
+                }
+                
+                // Create the img tag
+                const imgTag = `<img src="${filePath}" style="max-width: 100%;" />`;
+                
+                // Insert at cursor position
+                const start = markdownInput.selectionStart;
+                const end = markdownInput.selectionEnd;
+                const text = markdownInput.value;
+                
+                markdownInput.value = text.substring(0, start) + imgTag + text.substring(end);
+                
+                // Set cursor position after the inserted image
+                const newCursorPos = start + imgTag.length;
+                markdownInput.selectionStart = newCursorPos;
+                markdownInput.selectionEnd = newCursorPos;
+                
+                // Re-render document
+                renderDocument(markdownInput.value);
+                
+                // Reset input
+                fileInput.value = '';
+            };
+            
+            fileInput.click();
+        }
+
+        // Load all images from a directory (for embedding in saved HTML)
+        function loadAllImages() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.accept = 'image/*';
+            
+            fileInput.onchange = function(e) {
+                const files = Array.from(e.target.files);
+                
+                if (files.length === 0) {
+                    alert('No images selected');
+                    return;
+                }
+                
+                // Store files in memory for later use in saveHtml
+                window.loadedImages = new Map();
+                
+                files.forEach(file => {
+                    const filename = file.name.toLowerCase();
+                    const fullPath = file.webkitRelativePath.toLowerCase();
+                    window.loadedImages.set(filename, file);
+                    if (fullPath) {
+                        window.loadedImages.set(fullPath, file);
+                    }
+                });
+                
+                console.log('Loaded images:', files.map(f => f.name));
+                alert(`Loaded ${files.length} image(s) ready for embedding. Click "Save HTML" to embed them.`);
+                
+                // Reset input
+                fileInput.value = '';
+            };
+            
+            fileInput.click();
+        }
+
+        // Parse markdown to HTML
+        function parseMarkdown(markdown) {
+            let content = markdown.trim();
+            
+            // Parse block elements
+            content = parseBlockElements(content);
+            
+            // Parse inline elements
+            content = parseInlineElements(content);
+            
+            return content;
+        }
+
+        // Hash function for speaker names to generate colors
+        function hashSpeakerToColor(speakerName) {
+	    let firstLetterCode = Math.min(speakerName.charCodeAt(0) % 32, 26);
+            // 1. Map the 0-26 index to a 0-360 degree hue angle
+            const hue = (firstLetterCode / 27) * 360;
+            // 2. Return an oklch string: Lightness=0.7 (70%), Chroma=0.15 (Vibrancy), Hue
+            return `oklch(0.7 0.15 ${hue})`;
+        }
+
+        function parseBlockElements(content) {
+            let result = content;
+
+            // Headers
+            result = result.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            result = result.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            result = result.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Blockquotes
+            result = result.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // Parse hierarchical lists (both UL and OL)
+            result = parseHierarchicalLists(result);
+
+            // Code blocks
+            result = result.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+
+            // Horizontal rule
+            result = result.replace(/^---+$/gm, '<hr>');
+
+            // Wide device view blocks
+            result = result.replace(/<wide_device_view>([\s\S]*?)<\/wide_device_view>/g, function(match, innerContent) {
+                // Process the inner content - parse markdown within the wide view
+                const processedInner = parseMarkdownInner(innerContent);
+                return `<br><div class="device-view wide-device-view">${processedInner}</div><br>`;
+            });
+
+            // Narrow device view blocks
+            result = result.replace(/<narrow_device_view>([\s\S]*?)<\/narrow_device_view>/g, function(match, innerContent) {
+                // Process the inner content - parse markdown within the narrow view
+                const processedInner = parseMarkdownInner(innerContent);
+                return `<br><div class="device-view narrow-device-view">${processedInner}</div><br>`;
+            });
+
+            // Paragraphs (lines without special formatting)
+            const paragraphs = result.split('\n\n');
+            result = paragraphs.map(paragraph => {
+                paragraph = paragraph.trim();
+                if (!paragraph || 
+                    paragraph.startsWith('<h') || 
+                    paragraph.startsWith('<ul') || 
+                    paragraph.startsWith('<ol') || 
+                    paragraph.startsWith('<pre') || 
+                    paragraph.startsWith('<blockquote') ||
+                    paragraph.startsWith('<hr') ||
+                    paragraph.startsWith('<div') ||
+                    paragraph.startsWith('<br>')) {
+                    return paragraph;
+                }
+                // Split into lines and wrap in paragraph tags
+                const lines = paragraph.split('\n').map(line => {
+                    line = line.trim();
+                    if (line && !line.startsWith('<')) {
+                        return `<p>${line}</p>`;
+                    }
+                    return line;
+                }).join('\n');
+                return lines;
+            }).join('\n');
+
+            return result;
+        }
+
+        // Parse markdown within device views (wide and narrow) - without wrapping tags
+        function parseMarkdownInner(content) {
+            let result = content.trim();
+            
+            // Headers
+            result = result.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            result = result.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            result = result.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            
+            // Blockquotes
+            result = result.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+            
+            // Parse hierarchical lists
+            result = parseHierarchicalLists(result);
+            
+            // Code blocks
+            result = result.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            
+            // Horizontal rule
+            result = result.replace(/^---+$/gm, '<hr>');
+            
+            // Split into paragraphs (don't wrap in p tags for device view)
+            const paragraphs = result.split('\n\n');
+            result = paragraphs.map(paragraph => {
+                paragraph = paragraph.trim();
+                if (!paragraph || 
+                    paragraph.startsWith('<h') || 
+                    paragraph.startsWith('<ul') || 
+                    paragraph.startsWith('<ol') || 
+                    paragraph.startsWith('<pre') || 
+                    paragraph.startsWith('<blockquote') ||
+                    paragraph.startsWith('<hr')) {
+                    return paragraph;
+                }
+                const lines = paragraph.split('\n').map(line => {
+                    line = line.trim();
+                    if (line && !line.startsWith('<')) {
+                        return `<p>${line}</p>`;
+                    }
+                    return line;
+                }).join('\n');
+                return lines;
+            }).join('\n');
+            
+            // Parse inline elements
+            result = parseInlineElementsWide(result);
+            
+            return result;
+        }
+
+        function parseHierarchicalLists(content) {
+            // Split content into lines
+            const lines = content.split('\n');
+            let result = '';
+            let i = 0;
+
+            while (i < lines.length) {
+                const line = lines[i];
+                
+                // Check if this line starts a list item
+                const ulMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
+                const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
+
+                if (ulMatch || olMatch) {
+                    const baseIndent = ulMatch ? ulMatch[1].length : olMatch[1].length;
+                    const isOrdered = olMatch !== null;
+
+                    // Process this list block (including nested lists)
+                    const listHtml = processListBlock(lines, i, baseIndent, isOrdered);
+                    result += listHtml.html;
+                    i = listHtml.nextIndex;
+                } else {
+                    result += line + '\n';
+                    i++;
+                }
+            }
+
+            return result.trim();
+        }
+
+        function processListBlock(lines, startIndex, baseIndent, isOrdered) {
+            let html = isOrdered ? '<ol>' : '<ul>';
+            let i = startIndex;
+
+            while (i < lines.length) {
+                const line = lines[i];
+                const ulMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
+                const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
+
+                // Check if this line is a list item
+                if (ulMatch || olMatch) {
+                    const indent = ulMatch ? ulMatch[1].length : olMatch[1].length;
+                    const text = ulMatch ? ulMatch[2] : olMatch[2];
+
+                    // If indent is less than baseIndent, we've reached a sibling list
+                    if (indent < baseIndent) {
+                        break;
+                    }
+
+                    // If indent equals baseIndent, this is a top-level item
+                    if (indent === baseIndent) {
+                        // Check if list type changed (UL vs OL) - if so, stop
+                        const currentIsOrdered = olMatch !== null;
+                        if (currentIsOrdered !== isOrdered) {
+                            break;
+                        }
+
+                        // Check if there are nested items
+                        let nestedHtml = '';
+                        let nextI = i + 1;
+
+                        // Look ahead for nested items
+                        while (nextI < lines.length) {
+                            const nextLine = lines[nextI];
+                            const nextUlMatch = nextLine.match(/^(\s*)[-*+]\s+(.+)$/);
+                            const nextOlMatch = nextLine.match(/^(\s*)(\d+)\.\s+(.+)$/);
+
+                            if (nextUlMatch || nextOlMatch) {
+                                const nextIndent = nextUlMatch ? nextUlMatch[1].length : nextOlMatch[1].length;
+                                const nextText = nextUlMatch ? nextUlMatch[2] : nextOlMatch[2];
+
+                                if (nextIndent > indent) {
+                                    // This is a nested list
+                                    const nestedIsOrdered = nextOlMatch !== null;
+                                    const nestedResult = processListBlock(lines, nextI, nextIndent, nestedIsOrdered);
+                                    nestedHtml = nestedResult.html;
+                                    nextI = nestedResult.nextIndex;
+                                } else if (nextIndent === indent) {
+                                    // Same level - continue processing
+                                    break;
+                                } else {
+                                    // Less indent - back to parent level
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+
+                        // Add list item with optional nested content
+                        html += `<li>${text}${nestedHtml ? nestedHtml : ''}</li>`;
+                        i = nextI;
+                    } else {
+                        // indent > baseIndent - this should have been caught by nested processing
+                        // Break to avoid infinite loop
+                        break;
+                    }
+                } else {
+                    // Not a list item - stop processing this list
+                    break;
+                }
+            }
+
+            html += isOrdered ? '</ol>' : '</ul>';
+
+            return { html: html, nextIndex: i };
+        }
+
+        function parseInlineElements(content) {
+            // Step 1: Extract all code elements (inline and block) and store them
+            const codeElements = [];
+            
+            // First, handle inline code (backticks)
+            content = content.replace(/`([^`]+)`/g, (match, codeContent) => {
+                const placeholder = `__CODE_PLACEHOLDER_${codeElements.length}__`;
+                codeElements.push({ type: 'inline', content: codeContent });
+                return placeholder;
+            });
+
+            // Step 2: Apply bold and italic transformations only to non-code content
+            // Bold (must come before italic to handle ** properly)
+            content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic - handle both * and _ for emphasis
+            content = content.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            content = content.replace(/_(.+?)_/g, '<em>$1</em>');
+            
+            // Step 3: Restore inline code elements
+            codeElements.forEach((item, index) => {
+                content = content.replace(
+                    `__CODE_PLACEHOLDER_${index}__`, 
+                    `<code>${item.content}</code>`
+                );
+            });
+            
+            // Step 4: Process speaker tags first (before links, to supersede them)
+            // Matches: ![Name: "text"] where Name can be anything except : and ]
+            content = content.replace(/!\[([^\]:\]]+):\s*([\'"])([\s\S]*?)\2\]/g, function(match, speakerName, quoteChar, textContent) {
+                // Unescape any escaped quotes in the text content
+                const unescapedText = textContent.replace(new RegExp('\\\\' + quoteChar, 'g'), quoteChar);
+                const color = hashSpeakerToColor(speakerName);
+                return `<span style="color:${color}">${quoteChar}${unescapedText}${quoteChar}</span>`;
+            });
+            
+            // Step 5: Process links and images (only on non-code content)
+            content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            content = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+            return content;
+        }
+
+        function parseInlineElementsWide(content) {
+            // Step 1: Extract all code elements
+            const codeElements = [];
+            
+            // Inline code (backticks)
+            content = content.replace(/`([^`]+)`/g, (match, codeContent) => {
+                const placeholder = `__CODE_PLACEHOLDER_${codeElements.length}__`;
+                codeElements.push({ type: 'inline', content: codeContent });
+                return placeholder;
+            });
+
+            // Bold
+            content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic - handle both * and _
+            content = content.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            content = content.replace(/_(.+?)_/g, '<em>$1</em>');
+            
+            // Restore inline code
+            codeElements.forEach((item, index) => {
+                content = content.replace(
+                    `__CODE_PLACEHOLDER_${index}__`, 
+                    `<code>${item.content}</code>`
+                );
+            });
+            
+            // Step 2: Process speaker tags (before links, to supersede them)
+            // Matches: ![Name: "text"] where Name can be anything except : and ]
+            content = content.replace(/!\[([^\]:\]]+):\s*([\'"])([\s\S]*?)\2\]/g, function(match, speakerName, quoteChar, textContent) {
+                // Unescape any escaped quotes in the text content
+                const unescapedText = textContent.replace(new RegExp('\\\\' + quoteChar, 'g'), quoteChar);
+                const color = hashSpeakerToColor(speakerName);
+                return `<span style="color:${color}">${quoteChar}${unescapedText}${quoteChar}</span>`;
+            });
+            
+            // Step 3: Process links and images
+            content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            content = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+            return content;
+        }
+
+        function renderDocument(markdown) {
+            const html = parseMarkdown(markdown);
+            
+            if (!markdown.trim()) {
+                documentPreview.innerHTML = '<div class="empty-state">Enter markdown to see document preview</div>';
+                return;
+            }
+
+            documentPreview.innerHTML = `
+                <div class="document-page">
+                    ${html}
+                </div>
+            `;
+        }
+
+        // Render document on input change
+        markdownInput.addEventListener('input', () => {
+            renderDocument(markdownInput.value);
+        });
+
+        // Initial render with placeholder text
+        renderDocument(markdownInput.value);
+
+        // Dark mode toggle
+        const darkToggleBtn = document.getElementById('dark-toggle-btn');
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+
+        function applyDarkMode() {
+            const html = document.documentElement;
+            const icon = darkToggleBtn.querySelector('.icon');
+            if (isDarkMode) {
+                html.classList.add('dark');
+                icon.textContent = '🌙';
+            } else {
+                html.classList.remove('dark');
+                icon.textContent = '☀️';
+            }
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            localStorage.setItem('darkMode', isDarkMode);
+            applyDarkMode();
+        }
+
+        // Restore dark mode preference on load
+        applyDarkMode();
+
+        // Print document - create single-page PDF
+        function printDocument() {
+            // Save editor contents to sessionStorage before replacing document
+            sessionStorage.setItem('editorContents', markdownInput.value);
+            
+            // Get filename for PDF
+            const pdfFilename = getDefaultFilename().replace('.txt', '.pdf');
+            
+            // Parse the markdown to get document content
+            const htmlContent = parseMarkdown(markdownInput.value);
+            
+            if (!htmlContent.trim()) {
+                alert('No content to print');
+                return;
+            }
+            
+            // Build HTML content for single-page document
+            const printHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${pdfFilename}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 25mm;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: white;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .document-page {
+            padding: 40px 60px;
+            background: white;
+        }
+
+        .document-page h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.2;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        .document-page h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #444;
+            margin-bottom: 15px;
+            margin-top: 30px;
+        }
+
+        .document-page h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 12px;
+            margin-top: 25px;
+        }
+
+        .document-page p {
+            font-size: 1rem;
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .document-page ul {
+            font-size: 1rem;
+            color: #333;
+            line-height: 2;
+            margin-bottom: 20px;
+            padding-left: 30px;
+            list-style-type: disc;
+        }
+
+        .document-page ol {
+            font-size: 1rem;
+            color: #333;
+            line-height: 2;
+            margin-bottom: 20px;
+            padding-left: 30px;
+            list-style-type: decimal;
+        }
+
+        .document-page li {
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        .document-page blockquote {
+            border-left: 5px solid #667eea;
+            padding-left: 25px;
+            margin: 25px 0;
+            font-size: 1rem;
+            color: #555;
+            font-style: italic;
+            background: #f8f9fa;
+            padding: 20px 25px;
+            border-radius: 4px;
+        }
+
+        .document-page pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 25px 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .document-page code {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #f5f5f5;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #e83e8c;
+        }
+
+        .document-page pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .document-page table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+        }
+
+        .document-page th, .document-page td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            color: #333;
+        }
+
+        .document-page th {
+            background: #667eea;
+            color: white;
+        }
+
+        .document-page tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .document-page hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            margin: 30px 0;
+            border-radius: 2px;
+        }
+
+        .document-page img {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .back-link:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        @media print {
+            .back-link {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="docs.html" class="back-link" onclick="return exitPrintMode();">← Back to Editor</a>
+    <div class="document-page">
+        ${htmlContent}
+    </div>
+</body>
+</html>`;
+            
+            // Replace entire document
+            document.documentElement.innerHTML = printHtml;
+            
+            // Open print dialog after 500ms
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+
+        // Exit print mode - reload the original page
+        function exitPrintMode() {
+            window.location.href = 'docs.html';
+            return false;
+        }
+
+        // Convert images to data URLs using pre-loaded images
+        async function convertImagesToDataUrls(htmlContent) {
+            // Create a temporary DOM to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            const imgElements = tempDiv.querySelectorAll('img');
+            const uniquePaths = new Set();
+            
+            // Extract unique image paths
+            imgElements.forEach(img => {
+                const src = img.getAttribute('src');
+                if (src && !src.startsWith('data:')) {
+                    uniquePaths.add(src);
+                }
+            });
+            
+            if (uniquePaths.size === 0) {
+                return htmlContent;
+            }
+            
+            // Check if images were pre-loaded
+            const loadedImages = window.loadedImages || new Map();
+            
+            if (loadedImages.size === 0) {
+                throw new Error('No images loaded. Click "Load All Images" first to select images for embedding.');
+            }
+            
+            const imagePromises = [];
+            
+            for (const srcPath of uniquePaths) {
+                const filename = srcPath.split('/').pop();
+                
+                imagePromises.push(
+                    (async () => {
+                        const file = await getFileByPath(filename, loadedImages);
+                        if (file) {
+                            console.log('Found image:', filename, '->', file.name);
+                            const dataUrl = await blobToDataUrl(file);
+                            console.log('Converting:', srcPath);
+                            // Find all img elements with this src and update them
+                            imgElements.forEach(img => {
+                                if (img.getAttribute('src') === srcPath) {
+                                    img.setAttribute('src', dataUrl);
+                                    console.log('Converted to data URL');
+                                }
+                            });
+                        } else {
+                            console.warn('Could not find image in loaded files:', filename, 'Available:', Array.from(loadedImages.keys()));
+                        }
+                    })()
+                );
+            }
+            
+            await Promise.all(imagePromises);
+            return tempDiv.innerHTML;
+        }
+
+        // Try to find a file by path (handles various path formats, strips query strings)
+        function getFileByPath(path, fileMap) {
+            return new Promise((resolve) => {
+                // Strip query string from path (e.g., image.jpg?v=1 -> image.jpg)
+                const pathWithoutQuery = path.split('?')[0];
+                const lowerPath = pathWithoutQuery.toLowerCase();
+                
+                // Try exact match first
+                if (fileMap.has(lowerPath)) {
+                    resolve(fileMap.get(lowerPath));
+                    return;
+                }
+                
+                // Try just filename
+                const filename = pathWithoutQuery.split('/').pop().toLowerCase();
+                
+                // Check if the filename exists in any key
+                for (const [key, file] of fileMap) {
+                    const lowerKey = key.toLowerCase();
+                    // Direct filename match
+                    if (lowerKey === filename) {
+                        resolve(file);
+                        return;
+                    }
+                    // Extension match (e.g., photo.jpg matches /path/to/photo.jpg)
+                    if (lowerKey.endsWith('/' + filename)) {
+                        resolve(file);
+                        return;
+                    }
+                    // Partial match (filename appears in the key)
+                    if (lowerKey.includes(filename)) {
+                        resolve(file);
+                        return;
+                    }
+                }
+                
+                console.log('Looking for:', filename, '(from:', path, ') in keys:', Array.from(fileMap.keys()));
+                resolve(null);
+            });
+        }
+
+        // Convert a Blob to a Data URL
+        function blobToDataUrl(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // Save HTML - save the rendered document as a standalone HTML file
+        async function saveHtml() {
+            const htmlContent = documentPreview.innerHTML;
+            
+            if (!htmlContent || htmlContent.includes('empty-state')) {
+                alert('No content to save');
+                return;
+            }
+            
+            // Get filename from first header in HTML
+            const filename = getFilenameFromHeader(markdownInput.value, htmlContent).replace('.txt', '.html');
+            
+            // Check if there are images to embed
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            const imgElements = tempDiv.querySelectorAll('img:not([src^="data:"])');
+            
+            if (imgElements.length === 0) {
+                // No images to embed, save directly
+                const fullHtml = buildSavedHtml(htmlContent);
+                downloadHtml(fullHtml, filename);
+                return;
+            }
+            
+            // Collect unique image paths
+            const uniquePaths = new Set();
+            imgElements.forEach(img => uniquePaths.add(img.getAttribute('src')));
+            
+            // Get loaded images
+            const loadedImages = window.loadedImages || new Map();
+            
+            // Check which images are missing
+            const missingImages = [];
+            for (const srcPath of uniquePaths) {
+                const filename = srcPath.split('?')[0].split('/').pop();
+                if (!loadedImages.has(filename) && !loadedImages.has(filename.toLowerCase())) {
+                    missingImages.push(filename);
+                }
+            }
+            
+            if (missingImages.length > 0) {
+                // Show missing images
+                const missingList = missingImages.join('\n');
+                if (confirm('The following images are missing and need to be loaded:\n\n' + missingList + '\n\nClick OK to load them, or Cancel to abort.')) {
+                    try {
+                        const loaded = await loadMissingImages(missingImages);
+                        if (!loaded) {
+                            // User cancelled or selected no images
+                            console.log('Image loading cancelled');
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error loading images:', error);
+                        if (confirm('Error loading images: ' + error.message + '\n\nContinue without embedding images?')) {
+                            const fullHtml = buildSavedHtml(htmlContent);
+                            downloadHtml(fullHtml, filename);
+                        }
+                        return;
+                    }
+                } else {
+                    // User cancelled
+                    console.log('Image loading cancelled');
+                    return;
+                }
+            }
+            
+            // Verify all images are now loaded
+            const stillMissing = [];
+            for (const srcPath of uniquePaths) {
+                const filename = srcPath.split('?')[0].split('/').pop();
+                if (!loadedImages.has(filename) && !loadedImages.has(filename.toLowerCase())) {
+                    stillMissing.push(filename);
+                }
+            }
+            
+            if (stillMissing.length > 0) {
+                // Loop back to ask for remaining images
+                const missingList = stillMissing.join('\n');
+                alert('Still missing:\n' + missingList + '\n\nPlease load the remaining images.');
+                // Recursively call saveHtml
+                return saveHtml();
+            }
+            
+            // All images loaded, convert and save
+            try {
+                const processedContent = await convertImagesToDataUrls(htmlContent);
+                const fullHtml = buildSavedHtml(processedContent);
+                downloadHtml(fullHtml, filename);
+            } catch (error) {
+                console.error('Error converting images:', error);
+                if (confirm('Error converting images: ' + error.message + '\n\nContinue without embedding images?')) {
+                    const fullHtml = buildSavedHtml(htmlContent);
+                    downloadHtml(fullHtml, filename);
+                }
+            }
+        }
+
+        // Load missing images and return true if any were loaded
+        async function loadMissingImages(missingImages) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = 'image/*';
+            
+            return new Promise((resolve) => {
+                input.onchange = async function(e) {
+                    const files = Array.from(e.target.files);
+                    
+                    if (files.length === 0) {
+                        // User cancelled or selected no files
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Add loaded files to the map
+                    files.forEach(file => {
+                        const filename = file.name.toLowerCase();
+                        window.loadedImages.set(filename, file);
+                    });
+                    
+                    console.log('Loaded', files.length, 'images');
+                    resolve(true);
+                };
+                
+                input.onerror = () => {
+                    resolve(false);
+                };
+                
+                input.click();
+            });
+        }
+
+        // Helper function to download HTML
+        function downloadHtml(fullHtml, filename) {
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function buildSavedHtml(htmlContent) {
+            return '<!DOCTYPE html>\n' +
+'<html lang="en">\n' +
+'<head>\n' +
+'    <meta charset="UTF-8">\n' +
+'    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+'    <title>Document</title>\n' +
+'    <style>\n' +
+'        * {\n' +
+'            box-sizing: border-box;\n' +
+'            margin: 0;\n' +
+'            padding: 0;\n' +
+'        }\n' +
+'\n' +
+'        body {\n' +
+'            font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Oxygen, Ubuntu, sans-serif;\n' +
+'            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n' +
+'            min-height: 100vh;\n' +
+'            display: flex;\n' +
+'            justify-content: center;\n' +
+'            padding: 40px 20px;\n' +
+'        }\n' +
+'\n' +
+'        /* Dark mode toggle */\n' +
+'        .dark-toggle {\n' +
+'            position: fixed;\n' +
+'            top: 20px;\n' +
+'            right: 20px;\n' +
+'            background: white;\n' +
+'            color: #667eea;\n' +
+'            border: none;\n' +
+'            padding: 12px 16px;\n' +
+'            font-size: 1.2rem;\n' +
+'            border-radius: 8px;\n' +
+'            cursor: pointer;\n' +
+'            transition: all 0.3s ease;\n' +
+'            box-shadow: 0 4px 15px rgba(0,0,0,0.2);\n' +
+'            z-index: 1000;\n' +
+'        }\n' +
+'\n' +
+'        .dark-toggle:hover {\n' +
+'            transform: translateY(-2px);\n' +
+'            box-shadow: 0 6px 20px rgba(0,0,0,0.3);\n' +
+'        }\n' +
+'\n' +
+'        .document-page {\n' +
+'            background: #fff;\n' +
+'            border-radius: 12px;\n' +
+'            padding: 60px 80px;\n' +
+'            box-shadow: 0 10px 40px rgba(0,0,0,0.1);\n' +
+'            width: 780px;\n' +
+'            min-height: 1000px;\n' +
+'        }\n' +
+'\n' +
+'        .document-page h1 {\n' +
+'            font-size: 2.5rem;\n' +
+'            color: #333;\n' +
+'            margin-bottom: 20px;\n' +
+'            line-height: 1.2;\n' +
+'            border-bottom: 3px solid #667eea;\n' +
+'            padding-bottom: 15px;\n' +
+'        }\n' +
+'\n' +
+'        .document-page h2 {\n' +
+'            font-size: 2rem;\n' +
+'            color: #444;\n' +
+'            margin-bottom: 15px;\n' +
+'            margin-top: 30px;\n' +
+'        }\n' +
+'\n' +
+'        .document-page h3 {\n' +
+'            font-size: 1.5rem;\n' +
+'            color: #555;\n' +
+'            margin-bottom: 12px;\n' +
+'            margin-top: 25px;\n' +
+'        }\n' +
+'\n' +
+'        .document-page p {\n' +
+'            font-size: 1.1rem;\n' +
+'            color: #333;\n' +
+'            line-height: 1.8;\n' +
+'            margin-bottom: 15px;\n' +
+'        }\n' +
+'\n' +
+'        .document-page ul {\n' +
+'            font-size: 1.1rem;\n' +
+'            color: #333;\n' +
+'            line-height: 2;\n' +
+'            margin-bottom: 20px;\n' +
+'            padding-left: 30px;\n' +
+'            list-style-type: disc;\n' +
+'        }\n' +
+'\n' +
+'        .document-page ol {\n' +
+'            font-size: 1.1rem;\n' +
+'            color: #333;\n' +
+'            line-height: 2;\n' +
+'            margin-bottom: 20px;\n' +
+'            padding-left: 30px;\n' +
+'            list-style-type: decimal;\n' +
+'        }\n' +
+'\n' +
+'        .document-page li {\n' +
+'            margin-bottom: 8px;\n' +
+'            color: #333;\n' +
+'        }\n' +
+'\n' +
+'        .document-page ul ul,\n' +
+'        .document-page ul ol,\n' +
+'        .document-page ol ul,\n' +
+'        .document-page ol ol {\n' +
+'            margin-top: 8px;\n' +
+'            margin-bottom: 8px;\n' +
+'        }\n' +
+'\n' +
+'        .document-page blockquote {\n' +
+'            border-left: 5px solid #667eea;\n' +
+'            padding-left: 25px;\n' +
+'            margin: 25px 0;\n' +
+'            font-size: 1.1rem;\n' +
+'            color: #555;\n' +
+'            font-style: italic;\n' +
+'            background: #f8f9fa;\n' +
+'            padding: 20px 25px;\n' +
+'            border-radius: 4px;\n' +
+'        }\n' +
+'\n' +
+'        .document-page pre {\n' +
+'            background: #282c34;\n' +
+'            color: #abb2bf;\n' +
+'            padding: 25px;\n' +
+'            border-radius: 8px;\n' +
+'            overflow-x: auto;\n' +
+'            margin: 25px 0;\n' +
+'            font-family: \'Monaco\', \'Menlo\', monospace;\n' +
+'            font-size: 0.95rem;\n' +
+'            line-height: 1.5;\n' +
+'        }\n' +
+'\n' +
+'        .document-page code {\n' +
+'            font-family: \'Monaco\', \'Menlo\', monospace;\n' +
+'            background: #f5f5f5;\n' +
+'            padding: 3px 8px;\n' +
+'            border-radius: 4px;\n' +
+'            color: #e83e8c;\n' +
+'        }\n' +
+'\n' +
+'        .document-page pre code {\n' +
+'            background: none;\n' +
+'            color: inherit;\n' +
+'            padding: 0;\n' +
+'        }\n' +
+'\n' +
+'        .document-page table {\n' +
+'            width: 100%;\n' +
+'            border-collapse: collapse;\n' +
+'            margin: 25px 0;\n' +
+'        }\n' +
+'\n' +
+'        .document-page th, .document-page td {\n' +
+'            border: 1px solid #ddd;\n' +
+'            padding: 15px;\n' +
+'            text-align: left;\n' +
+'            color: #333;\n' +
+'        }\n' +
+'\n' +
+'        .document-page img {\n' +
+'            display: block;\n' +
+'            margin: 20px auto;\n' +
+'            max-width: 100%;\n' +
+'            height: auto;\n' +
+'        }\n' +
+'\n' +
+'        .document-page th {\n' +
+'            background: #667eea;\n' +
+'            color: white;\n' +
+'        }\n' +
+'\n' +
+'        .document-page tr:nth-child(even) {\n' +
+'            background: #f9f9f9;\n' +
+'        }\n' +
+'\n' +
+'        .document-page hr {\n' +
+'            border: none;\n' +
+'            height: 3px;\n' +
+'            background: linear-gradient(to right, #667eea, #764ba2);\n' +
+'            margin: 30px 0;\n' +
+'            border-radius: 2px;\n' +
+'        }\n' +
+'\n' +
+'        .device-view {\n' +
+'            background-color: #0a0e27;\n' +
+'            color: #7fbcff;\n' +
+'            font-family: \'Courier New\', Courier, monospace;\n' +
+'            padding: 20px;\n' +
+'            margin: 0;\n' +
+'            border-radius: 15px;\n' +
+'            font-size: 75%;\n' +
+'            display: block;\n' +
+'            margin: 20px auto;\n' +
+'        }\n' +
+'\n' +
+'        .wide-device-view {\n' +
+'            max-width: 900px;\n' +
+'        }\n' +
+'\n' +
+'        .narrow-device-view {\n' +
+'            max-width: 50%;\n' +
+'        }\n' +
+'\n' +
+'        .device-view h3 {\n' +
+'            color: #7fbcff;\n' +
+'            border-bottom: 2px solid #3d70c3;\n' +
+'            padding-bottom: 10px;\n' +
+'            margin-bottom: 20px;\n' +
+'        }\n' +
+'\n' +
+'        .device-view table {\n' +
+'            width: 100%;\n' +
+'            border-collapse: collapse;\n' +
+'            margin-bottom: 30px;\n' +
+'        }\n' +
+'\n' +
+'        .device-view thead tr {\n' +
+'            background-color: #1a2a4a;\n' +
+'            border: 1px solid #3d70c3;\n' +
+'        }\n' +
+'\n' +
+'        .device-view th {\n' +
+'            padding: 12px;\n' +
+'            text-align: left;\n' +
+'            border: 1px solid #3d70c3;\n' +
+'            color: #cef;\n' +
+'            font-weight: bold;\n' +
+'        }\n' +
+'\n' +
+'        .device-view tbody tr:nth-child(odd) {\n' +
+'            background-color: #0f1a3a !important;\n' +
+'            border: 1px solid #2a4a7a;\n' +
+'        }\n' +
+'\n' +
+'        .device-view tbody tr:nth-child(even) {\n' +
+'            background-color: #12204a !important;\n' +
+'            border: 1px solid #2a4a7a;\n' +
+'        }\n' +
+'\n' +
+'        .device-view td {\n' +
+'            padding: 10px;\n' +
+'            border: 1px solid #2a4a7a;\n' +
+'            color: #b8d8ff;\n' +
+'            font-weight: bold;\n' +
+'        }\n' +
+'\n' +
+'        .device-view button {\n' +
+'            background-color: #1a3a6a;\n' +
+'            border: 1px solid #3d70c3;\n' +
+'            padding: 10px 25px;\n' +
+'            font-family: \'Courier New\', Courier, monospace;\n' +
+'            font-size: 14px;\n' +
+'            cursor: pointer;\n' +
+'            border-radius: 3px;\n' +
+'            transition: all 0.2s;\n' +
+'            color: #cef;\n' +
+'        }\n' +
+'\n' +
+'        .device-view button:hover {\n' +
+'            background-color: #2a4a7a;\n' +
+'            border-color: #7fbcff;\n' +
+'        }\n' +
+'\n' +
+'        .device-view ul,\n' +
+'        .device-view ol {\n' +
+'            padding-left: 10px !important;\n' +
+'            margin-left: 0 !important;\n' +
+'            margin-bottom: 0 !important;\n' +
+'            list-style-position: outside !important;\n' +
+'            font-size: inherit !important;\n' +
+'            color: #9cc2ff !important;\n' +
+'            line-height: inherit !important;\n' +
+'            font-family: inherit !important;\n' +
+'        }\n' +
+'\n' +
+'        .device-view li {\n' +
+'            padding-left: 0 !important;\n' +
+'            list-style-position: outside !important;\n' +
+'            margin-bottom: 0 !important;\n' +
+'            font-size: inherit !important;\n' +
+'            color: #9cc2ff !important;\n' +
+'            font-family: inherit !important;\n' +
+'        }\n' +
+'\n' +
+'        /* Dark mode overrides */\n' +
+'        html.dark body {\n' +
+'            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);\n' +
+'        }\n' +
+'\n' +
+'        html.dark .dark-toggle {\n' +
+'            background: #1a1a2e;\n' +
+'            color: #f0e68c;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page {\n' +
+'            background: #1a1a2e;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page h1 {\n' +
+'            color: #f0f0f0;\n' +
+'            border-bottom-color: #8b83c3;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page h2 {\n' +
+'            color: #d0d0d0;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page h3 {\n' +
+'            color: #c0c0c0;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page p,\n' +
+'        html.dark .document-page ul,\n' +
+'        html.dark .document-page ol {\n' +
+'            color: #d0d0d0;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page li {\n' +
+'            color: #d0d0d0;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page blockquote {\n' +
+'            color: #b0b0b0;\n' +
+'            background: rgba(255,255,255,0.05);\n' +
+'            border-left-color: #8b83c3;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page code {\n' +
+'            background: rgba(255,255,255,0.1);\n' +
+'            color: #f08dcd;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page table {\n' +
+'            border-color: #444;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page th, html.dark .document-page td {\n' +
+'            border-color: #444;\n' +
+'            color: #d0d0d0;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page th {\n' +
+'            background: #4a4580;\n' +
+'            color: white;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page tr:nth-child(even) {\n' +
+'            background: rgba(255,255,255,0.03);\n' +
+'        }\n' +
+'\n' +
+'        html.dark .document-page hr {\n' +
+'            background: linear-gradient(to right, #8b83c3, #6b5ba0);\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view {\n' +
+'            background-color: #050510;\n' +
+'            border-color: #1a1a40;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view h3 {\n' +
+'            color: #5588cc;\n' +
+'            border-bottom-color: #1a3a6a;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view th {\n' +
+'            color: #88bbee;\n' +
+'            border-color: #1a3a6a;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view td {\n' +
+'            color: #88bbee;\n' +
+'            border-color: #1a3a6a;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view tbody tr:nth-child(odd) {\n' +
+'            background-color: #080820;\n' +
+'            border-color: #0f1a3a;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view tbody tr:nth-child(even) {\n' +
+'            background-color: #0a0a2a;\n' +
+'            border-color: #0f1a3a;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view button {\n' +
+'            background-color: #0a1a3a;\n' +
+'            border-color: #1a3a6a;\n' +
+'            color: #88bbee;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view button:hover {\n' +
+'            background-color: #1a2a4a;\n' +
+'            border-color: #4488cc;\n' +
+'        }\n' +
+'\n' +
+'        html.dark .device-view ul,\n' +
+'        html.dark .device-view ol,\n' +
+'        html.dark .device-view li {\n' +
+'            color: #6699bb;\n' +
+'        }\n' +
+'\n' +
+'        /* Mobile responsive styles */\n' +
+'        @media (max-width: 768px) {\n' +
+'            body {\n' +
+'                padding: 20px 10px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page {\n' +
+'                width: 100%;\n' +
+'                padding: 25px 15px;\n' +
+'                min-height: auto;\n' +
+'            }\n' +
+'\n' +
+'            .document-page h1 {\n' +
+'                font-size: 1.4rem;\n' +
+'                margin-bottom: 15px;\n' +
+'                padding-bottom: 10px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page h2 {\n' +
+'                font-size: 1.2rem;\n' +
+'                margin-bottom: 12px;\n' +
+'                margin-top: 20px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page h3 {\n' +
+'                font-size: 1rem;\n' +
+'                margin-bottom: 10px;\n' +
+'                margin-top: 18px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page p {\n' +
+'                font-size: 0.9rem;\n' +
+'                line-height: 1.6;\n' +
+'                margin-bottom: 12px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page ul,\n' +
+'            .document-page ol {\n' +
+'                font-size: 0.9rem;\n' +
+'                line-height: 1.7;\n' +
+'                margin-bottom: 15px;\n' +
+'                padding-left: 20px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page li {\n' +
+'                margin-bottom: 5px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page blockquote {\n' +
+'                font-size: 0.9rem;\n' +
+'                padding-left: 15px;\n' +
+'                margin: 15px 0;\n' +
+'                padding: 12px 15px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page pre {\n' +
+'                padding: 12px;\n' +
+'                font-size: 0.75rem;\n' +
+'                margin: 15px 0;\n' +
+'            }\n' +
+'\n' +
+'            .document-page code {\n' +
+'                font-size: 0.8rem;\n' +
+'                padding: 2px 5px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page table {\n' +
+'                font-size: 0.8rem;\n' +
+'            }\n' +
+'\n' +
+'            .document-page th,\n' +
+'            .document-page td {\n' +
+'                padding: 8px;\n' +
+'            }\n' +
+'\n' +
+'            .document-page img {\n' +
+'                margin: 15px auto;\n' +
+'            }\n' +
+'\n' +
+'            .document-page hr {\n' +
+'                margin: 20px 0;\n' +
+'            }\n' +
+'\n' +
+'            .wide-device-view,\n' +
+'            .narrow-device-view {\n' +
+'                max-width: 100%;\n' +
+'                padding: 15px;\n' +
+'                font-size: 70%;\n' +
+'                margin: 15px auto;\n' +
+'            }\n' +
+'\n' +
+'            .device-view table {\n' +
+'                margin-bottom: 20px;\n' +
+'                font-size: 0.85rem;\n' +
+'            }\n' +
+'\n' +
+'            .device-view th,\n' +
+'            .device-view td {\n' +
+'                padding: 6px;\n' +
+'            }\n' +
+'\n' +
+'            .device-view button {\n' +
+'                padding: 8px 18px;\n' +
+'                font-size: 12px;\n' +
+'            }\n' +
+'        }\n' +
+'    </style>\n' +
+'</head>\n' +
+'<body>\n' +
+'    <button class="dark-toggle" onclick="toggleDarkMode()">☀️</button>\n' +
+'    ' + htmlContent + '\n' +
+'</body>\n' +
+'<script>\n' +
+'    var isDarkMode = localStorage.getItem(\'darkMode\') === \'true\';\n' +
+'    function toggleDarkMode() {\n' +
+'        isDarkMode = !isDarkMode;\n' +
+'        localStorage.setItem(\'darkMode\', isDarkMode);\n' +
+'        var html = document.documentElement;\n' +
+'        var btn = document.querySelector(\'.dark-toggle\');\n' +
+'        if (isDarkMode) {\n' +
+'            html.classList.add(\'dark\');\n' +
+'            btn.textContent = \'🌙\';\n' +
+'        } else {\n' +
+'            html.classList.remove(\'dark\');\n' +
+'            btn.textContent = \'☀️\';\n' +
+'        }\n' +
+'    }\n' +
+'    if (isDarkMode) {\n' +
+'        document.documentElement.classList.add(\'dark\');\n' +
+'        document.querySelector(\'.dark-toggle\').textContent = \'🌙\';\n' +
+'    }\n' +
+'<\/' + 'script>\n' +
+'</html>';
+        }
+    </script>
+</body>
+</html>
